@@ -4,3 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+wgpu = "22.1.0"
+imgui = {version = "0.12.0", features = ["tables-api"]}
+imgui-wgpu = {git = "https://github.com/GameHunter101/imgui-wgpu-rs"}
+winit = "0.30.5"
+imgui-winit-support = "0.13.0"
+bytemuck = { version = "1.19.0", features = ["derive"] }
+nalgebra = "0.33.2"
+pollster = "0.4.0"
+env_logger = "0.11.5"
+
