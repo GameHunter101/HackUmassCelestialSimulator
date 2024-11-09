@@ -50,14 +50,6 @@ impl Planet {
     fn calc_init_velocity(&self, planet_list: &[Planet]) -> Vector3<f32> {
         let accel = calc_accel(planet_list);
         // Attempt to get a Star
-        /*let star: Option<Planet> = for p in planet_list {
-            match p.id {
-                None => continue,
-                Some(id) => match id {
-                    PlanetType::Star => &p
-                }
-            }
-        };*/
         let star = Some(planet_list[0]);
 
         let dr = star.unwrap().pos - self.pos;
