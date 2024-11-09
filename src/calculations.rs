@@ -2,6 +2,7 @@ use std::intrinsics::sqrtf32;
 
 use nalgebra::Vector3;
 
+// Gravitational constant, can probably adjust
 const GRAV: f32 = 6.67430;
 
 struct Planet {
@@ -11,9 +12,13 @@ struct Planet {
     vel: Vector3<f32>,
 
     // Display properties
-    id: Option<u8>,
+    id: Option<PlanetType>,
     radius: f32,
     rot_vel: f32, // Angular velocity in rad/s
+}
+
+enum PlanetType {
+    Star,
 }
 
 impl Planet {
@@ -41,11 +46,24 @@ impl Planet {
     }
 
     // Attempt to calculate inital centripetal velocity for stable orbit
+    // For simplicity, planet_list only contains the star
     fn calc_init_velocity(&self, planet_list: &[Planet]) -> Vector3<f32> {
         let accel = calc_accel(planet_list);
-        let star: Option<Planet> = None;
-        let dr = (star.unwrap().pos - self.pos).magnitude();
-        // INCMPLETE
-        f32::sqrt(accel.magnitude() * dr)
+        // Attempt to get a Star
+        /*let star: Option<Planet> = for p in planet_list {
+            match p.id {
+                None => continue,
+                Some(id) => match id {
+                    PlanetType::Star => &p
+                }
+            }
+        };*/
+        let star = Some(planet_list[0]);
+
+        let dr = star.unwrap().pos - self.pos;
+        let mag = f32::sqrt(accel.magnitude() * dr.magnitude());
+        let uv = Vector3::z_axis().cross(&dr.normalize());
+
+        uv * mag
     }
 }
