@@ -1,24 +1,48 @@
 struct VertexOutput {
-    @builtin(position) clip_position: vec4<f32>
+    @builtin(position) clip_position: vec4<f32>,
+    @location(0) tex_coords: vec2<f32>,
+}
+
+struct Camera {
+    pos: vec3<f32>,
+    matrix: mat4x4<f32>,
+}
+
+struct Planet {
+    mass: f32,
+    pos: vec3<f32>,
+    padding: f32,
+    radius: f32,
+}
+
+struct Planets {
+    planets: array<Planet,5>
 }
 
 struct Uniforms {
     iResolution: vec2<f32>,
-    iTime: f32,
     iMouse: vec2<f32>,
+    iTime: f32,
+    padding: f32,
 }
 
 @group(0) @binding(0)
+var<uniform> camera: Camera;
+
+@group(1) @binding(0)
+var<uniform> planets: Planets;
+
+@group(2) @binding(0)
 var<uniform> uniforms : Uniforms;
 
 fn map(p : vec3f) -> f32 {
-    return length(p) - 1.0;
+    return length(p - vec3f(0.5, 0.5, 0.5)) - 1.0;
 }
 
 @fragment
 fn main(vertex_output: VertexOutput) -> @location(0) vec4f {
     // var uv = vec2f((vertex_output.clip_position * 2. - uniforms.iResolution.xy) / uniforms.iResolution.y);
-    let uv = vertex_output.clip_position.xy / uniforms.iResolution;
+    let uv = vertex_output.tex_coords;
 
     // Initialization
     let rayOrigin = vec3f(0., 0., -3.);

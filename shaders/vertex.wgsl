@@ -4,12 +4,14 @@ struct VertexInput {
 }
 
 struct VertexOutput {
-    @builtin(position) clip_position: vec4<f32>
+    @builtin(position) clip_position: vec4<f32>,
+    @location(0) tex_coords: vec2<f32>,
 }
 
 @vertex
 fn main(model: VertexInput) -> VertexOutput {
     var out: VertexOutput;
     out.clip_position = vec4f(model.position, 1.0);
+    out.tex_coords = model.tex_coords;
     return out;
 }
