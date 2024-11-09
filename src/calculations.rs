@@ -11,7 +11,7 @@ struct Planet {
 
 impl Planet {
     // Calculate acceleration
-    fn calcAccel(&mut self, planetList: &[Planet]) -> Vector3<f32> {
+    fn calcAccel(&self, planetList: &[Planet]) -> Vector3<f32> {
         // Make sure planetList doesn't contain self
         let mut accel: Vector3<f32> = 0;
         for p in planetList {
