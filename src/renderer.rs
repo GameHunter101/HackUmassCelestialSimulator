@@ -1,6 +1,7 @@
-use wgpu::{Backends, Instance, InstanceDescriptor, InstanceFlags, RequestAdapterOptions};
+use wgpu::{Backends, Instance, InstanceDescriptor, RequestAdapterOptions};
 use winit::window::Window;
 
+#[derive(Debug)]
 pub struct Renderer<'a> {
     surface: wgpu::Surface<'a>,
     device: wgpu::Device,
@@ -11,14 +12,14 @@ pub struct Renderer<'a> {
 }
 
 impl<'a> Renderer<'a> {
-    fn new(window: &winit::window::Window) -> Renderer<'a>{
+    pub fn new(window: &'a winit::window::Window) -> Renderer<'a> {
         let instance = Instance::new(InstanceDescriptor {
             backends: Backends::all(),
             ..Default::default()
         });
 
         let surface = instance
-            .create_surface(&window)
+            .create_surface(window)
             .expect("Failed to create surface");
 
         let adapter = pollster::block_on(instance.request_adapter(&RequestAdapterOptions {
@@ -41,7 +42,9 @@ impl<'a> Renderer<'a> {
 
         let surface_caps = surface.get_capabilities(&adapter);
 
-        let surface_format = surface_caps.formats.iter()
+        let surface_format = surface_caps
+            .formats
+            .iter()
             .find(|f| f.is_srgb())
             .copied()
             .unwrap_or(surface_caps.formats[0]);
@@ -95,7 +98,8 @@ impl<'a> Renderer<'a> {
                 push_constant_ranges: &[],
             });
 
-        let vertex_shader_module = device.create_shader_module(wgpu::include_wgsl!("../shaders/vertex.wgsl"));
+        let vertex_shader_module =
+            device.create_shader_module(wgpu::include_wgsl!("../shaders/vertex.wgsl"));
         let vertex_attributes = wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x2];
 
         let vertex_shader = wgpu::VertexState {
@@ -103,24 +107,56 @@ impl<'a> Renderer<'a> {
             entry_point: "main",
             compilation_options: Default::default(),
             buffers: &[wgpu::VertexBufferLayout {
-                array_stride: std::mem::size_of::<[f32;5]>() as wgpu::BufferAddress,
+                array_stride: std::mem::size_of::<[f32; 5]>() as wgpu::BufferAddress,
                 step_mode: wgpu::VertexStepMode::Vertex,
                 attributes: &vertex_attributes,
             }],
         };
 
+        let fragment_shader_module =
+            device.create_shader_module(wgpu::include_wgsl!("../shaders/fragment.wgsl"));
+
+        let fragment_shader = wgpu::FragmentState {
+            module: &fragment_shader_module,
+            entry_point: "main",
+            compilation_options: Default::default(),
+            targets: &[Some(wgpu::ColorTargetState {
+                format: config.format,
+                blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                write_mask: wgpu::ColorWrites::ALL,
+            })],
+        };
+
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Render Pipeline"),
             layout: Some(&render_pipeline_layout),
-            vertex: todo!(),
-            primitive: todo!(),
-            depth_stencil: todo!(),
-            multisample: todo!(),
-            fragment: todo!(),
-            multiview: todo!(),
-            cache: todo!(),
+            vertex: vertex_shader,
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: Some(wgpu::Face::Back),
+                unclipped_depth: false,
+                polygon_mode: wgpu::PolygonMode::Fill,
+                conservative: false,
+            },
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: wgpu::TextureFormat::Depth32Float,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less,
+                stencil: wgpu::StencilState::default(),
+                bias: wgpu::DepthBiasState::default(),
+            }),
+            multisample: wgpu::MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
+            fragment: Some(fragment_shader),
+            multiview: None,
+            cache: None,
         });
-        
+
         Self {
             window,
             surface,
@@ -129,5 +165,9 @@ impl<'a> Renderer<'a> {
             config,
             size,
         }
+    }
+
+    pub fn window(&self) -> &Window {
+        self.window
     }
 }
