@@ -1,5 +1,7 @@
+mod camera;
 mod renderer;
 
+use camera::Camera;
 use renderer::Renderer;
 use winit::{
     event::{Event, WindowEvent},
@@ -15,7 +17,7 @@ fn main() {
         .build(&event_loop)
         .unwrap();
 
-    let renderer = Renderer::new(&window);
+    let mut renderer = Renderer::new(&window, &[12, 12, 12], &Camera::default());
 
     event_loop.set_control_flow(winit::event_loop::ControlFlow::Poll);
 
@@ -25,13 +27,18 @@ fn main() {
                 event: WindowEvent::CloseRequested,
                 ..
             } => elwt.exit(),
+            Event::WindowEvent { event: WindowEvent::Resized(new_size), .. } => {
+                renderer.resize(new_size);
+            }
             Event::AboutToWait => {
                 renderer.window().request_redraw();
             }
             Event::WindowEvent {
                 event: WindowEvent::RedrawRequested,
                 ..
-            } => {}
+            } => {
+                renderer.render();
+            }
             _ => {}
         })
         .unwrap();
