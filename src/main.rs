@@ -1,4 +1,5 @@
 mod renderer;
+mod calculations;
 
 use winit::{application::ApplicationHandler, event_loop::EventLoop, window::Window};
 
