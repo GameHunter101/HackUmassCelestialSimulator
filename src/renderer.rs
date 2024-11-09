@@ -25,8 +25,6 @@ pub struct Renderer<'a> {
     depth_texture: wgpu::Texture,
     depth_texture_view: wgpu::TextureView,
     depth_texture_sampler: wgpu::Sampler,
-    vertex_buffer: wgpu::Buffer,
-    index_buffer: wgpu::Buffer,
     window: &'a Window,
 }
 
@@ -265,7 +263,6 @@ impl<'a> Renderer<'a> {
         });
 
         Self {
-            window,
             surface,
             device,
             queue,
@@ -284,10 +281,6 @@ impl<'a> Renderer<'a> {
             info_bind_group,
             info_buffer,
         }
-    }
-
-    pub fn window(&self) -> &Window {
-        self.window
     }
 
     pub fn create_depth_texture(
