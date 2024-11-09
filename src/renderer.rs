@@ -1,10 +1,12 @@
-use wgpu::{
-    util::{DeviceExt, RenderEncoder},
-    Backends, Instance, InstanceDescriptor, RequestAdapterOptions,
-};
+use wgpu::{util::DeviceExt, Backends, Instance, InstanceDescriptor, RequestAdapterOptions};
 use winit::window::Window;
 
-use crate::camera::Camera;
+use crate::{
+    calculations::RawPlanetData,
+    camera::Camera,
+    mesh::{INDICES, VERTICES},
+    SceneInfo,
+};
 
 #[derive(Debug)]
 pub struct Renderer<'a> {
@@ -15,20 +17,25 @@ pub struct Renderer<'a> {
     size: winit::dpi::PhysicalSize<u32>,
     render_pipeline: wgpu::RenderPipeline,
     camera_bind_group: wgpu::BindGroup,
+    camera_buffer: wgpu::Buffer,
     planet_bind_group: wgpu::BindGroup,
+    planet_buffer: wgpu::Buffer,
+    info_bind_group: wgpu::BindGroup,
+    info_buffer: wgpu::Buffer,
     depth_texture: wgpu::Texture,
     depth_texture_view: wgpu::TextureView,
     depth_texture_sampler: wgpu::Sampler,
+    vertex_buffer: wgpu::Buffer,
+    index_buffer: wgpu::Buffer,
     window: &'a Window,
 }
-
-type Planet = u64;
 
 impl<'a> Renderer<'a> {
     pub fn new(
         window: &'a winit::window::Window,
-        planets: &[Planet],
+        planets: &[RawPlanetData],
         camera: &Camera,
+        info: SceneInfo,
     ) -> Renderer<'a> {
         let instance = Instance::new(InstanceDescriptor {
             backends: Backends::PRIMARY,
@@ -92,20 +99,19 @@ impl<'a> Renderer<'a> {
                     count: None,
                 }],
             });
+
+        let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Camera Buffer"),
+            contents: bytemuck::cast_slice(&[camera.to_raw_data()]),
+            usage: wgpu::BufferUsages::UNIFORM,
+        });
+
         let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Camera Bind Group"),
             layout: &camera_bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                resource: wgpu::BindingResource::Buffer(
-                    device
-                        .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                            label: Some("Camera Buffer"),
-                            contents: bytemuck::cast_slice(&[camera.to_raw_data()]),
-                            usage: wgpu::BufferUsages::UNIFORM,
-                        })
-                        .as_entire_buffer_binding(),
-                ),
+                resource: wgpu::BindingResource::Buffer(camera_buffer.as_entire_buffer_binding()),
             }],
         });
 
@@ -124,24 +130,56 @@ impl<'a> Renderer<'a> {
                 }],
             });
 
+        let planet_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Planet Buffer"),
+            contents: bytemuck::cast_slice(planets),
+            usage: wgpu::BufferUsages::UNIFORM,
+        });
+
         let planet_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Planet Bind Group"),
             layout: &planet_bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                resource: wgpu::BindingResource::Buffer(
-                    device
-                        .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                            label: Some("Planet Buffer"),
-                            contents: bytemuck::cast_slice(planets),
-                            usage: wgpu::BufferUsages::UNIFORM,
-                        })
-                        .as_entire_buffer_binding(),
-                ),
+                resource: wgpu::BindingResource::Buffer(planet_buffer.as_entire_buffer_binding()),
             }],
         });
 
-        let bind_group_layouts = vec![&camera_bind_group_layout, &planet_bind_group_layout];
+        let info_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Info Bind Group Layout"),
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+            });
+
+        let info_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Info Buffer"),
+            contents: bytemuck::cast_slice(&[info]),
+            usage: wgpu::BufferUsages::UNIFORM,
+        });
+
+        let info_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Info Bind Group"),
+            layout: &info_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::Buffer(info_buffer.as_entire_buffer_binding()),
+            }],
+        });
+
+        let bind_group_layouts = vec![
+            &camera_bind_group_layout,
+            &planet_bind_group_layout,
+            &info_bind_group_layout,
+        ];
 
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -209,8 +247,22 @@ impl<'a> Renderer<'a> {
             cache: None,
         });
 
+        println!("Size: {size:?}");
+
         let (depth_texture, depth_texture_view, depth_texture_sampler) =
             Self::create_depth_texture(&device, &config);
+
+        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Vertex Buffer"),
+            contents: bytemuck::cast_slice(&VERTICES),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+
+        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Index Buffer"),
+            contents: bytemuck::cast_slice(&INDICES),
+            usage: wgpu::BufferUsages::INDEX,
+        });
 
         Self {
             window,
@@ -225,6 +277,12 @@ impl<'a> Renderer<'a> {
             depth_texture,
             depth_texture_view,
             depth_texture_sampler,
+            vertex_buffer,
+            index_buffer,
+            camera_buffer,
+            planet_buffer,
+            info_bind_group,
+            info_buffer,
         }
     }
 
@@ -307,6 +365,14 @@ impl<'a> Renderer<'a> {
             });
 
             render_pass.set_pipeline(&self.render_pipeline);
+
+            render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
+            render_pass.set_bind_group(1, &self.planet_bind_group, &[]);
+            render_pass.set_bind_group(2, &self.info_bind_group, &[]);
+
+            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.draw_indexed(0..(INDICES.len() as u32), 0, 0..1);
         }
 
         self.queue.submit(Some(encoder.finish()));
