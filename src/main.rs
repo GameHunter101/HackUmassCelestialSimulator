@@ -5,6 +5,7 @@ mod renderer;
 
 use calculations::RawPlanetData;
 use camera::Camera;
+use nalgebra::Vector3;
 use renderer::Renderer;
 use winit::{
     dpi::PhysicalPosition,
@@ -29,6 +30,7 @@ fn main() {
     };
 
     let mut camera = Camera::default();
+    camera.pos = Vector3::new(0.0, 0.0, -4.0);
 
     let mut planets = [RawPlanetData {
         mass: 10.0,

@@ -37,10 +37,13 @@ var<uniform> uniforms : Uniforms;
 
 fn map(p : vec3f) -> f32 {
     // This is our interface for translating the sphere
-    var spherePosition = vec3f(0.,0.,3.0);
+    var spherePosition = vec3f(0.,0.,0.0);
     var sphere = sdSphere(p - spherePosition, 1.);
 
-    return sphere;
+    let q = abs(p) - 0.5;
+    return length(max(q,vec3f(0.0))) + min(max(q.x,max(q.y,q.z)),0.0);
+
+    // return sphere;
 }
 
 fn sdSphere(position : vec3f, s : f32) -> f32 {
@@ -71,6 +74,7 @@ fn main(vertex_output: VertexOutput) -> @location(0) vec4f {
 
     // Initialization
     var rayOrigin = camera.pos.xyz;
+    // var rayOrigin = vec3f(-2.0,0.0,-2.0);
     var rayDirection = normalize(matrix*vec3f(uv,1/tan(FOV/2)));
     var color = vec3(0.0);
 
