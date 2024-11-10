@@ -77,7 +77,10 @@ impl Planet {
                 let reflection_vector = self.vel - 2.0 * (self.vel.dot(&normal_vec)) * normal_vec;
                 let old_vel = self.vel;
                 self.vel = reflection_vector;
-                *planet.vel = *old_vel;
+                // *planet.vel = *old_vel;
+                let new_other_vel = planet.vel + self.mass / planet.mass * (old_vel - reflection_vector);
+                *planet.vel = *new_other_vel;
+
             }
         }
     }
