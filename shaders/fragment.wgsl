@@ -4,8 +4,8 @@ struct VertexOutput {
 }
 
 struct Camera {
+    matrix: mat3x3<f32>,
     pos: vec3<f32>,
-    matrix: mat4x4<f32>,
 }
 
 struct Planet {
@@ -37,7 +37,7 @@ var<uniform> uniforms : Uniforms;
 
 fn map(p : vec3f) -> f32 {
     // This is our interface for translating the sphere
-    var spherePosition = vec3f(2.,2.,0);
+    var spherePosition = vec3f(0.,0.,-1.5);
     var sphere = sdSphere(p - spherePosition, 1.);
 
     return sphere;
@@ -56,15 +56,23 @@ fn rot2D(angle : f32) -> mat2x2<f32>{
 @fragment
 fn main(vertex_output: VertexOutput) -> @location(0) vec4f {
     let uv = vertex_output.tex_coords * vec2f(uniforms.iResolution.x / uniforms.iResolution.y, 1.0);
+    let m = (uniforms.iMouse.xy * 2 - uniforms.iResolution.xy) / uniforms.iResolution.y;
+    let FOV = 60 * (3.14159265 / 180);
 
     // return vec4f(uv, 0.0, 1.0);
 
     // Initialization
-    let rayOrigin = vec3f(0., 0., -3.);
-    let rayDirection = normalize(vec3(uv * 2.5, 1.));
+    var rayOrigin = camera.pos;
+    var rayDirection = normalize(camera.matrix*vec3f(uv,1/tan(FOV/2)));
     var color = vec3(0.0);
 
     var totalDist = 0.;
+
+    // var xzSwizzle : vec2;
+    // rayOrigin.x *= rot2D(-m.x);
+    // rayOrigin.z *= rot2D(-m.x);
+    // rayDirection.x *= rot2D(-m.x);
+    // rayDirection.z *= rot2D(-m.x);
 
     // Ray marching
     for (var i = 0; i < 80; i++){

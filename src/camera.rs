@@ -38,6 +38,7 @@ impl Camera {
         RawCameraData {
             pos: self.pos.into(),
             matrix: rotation_matrix.into(),
+            padding: [0.0; 6],
         }
     }
 
@@ -58,6 +59,7 @@ impl Camera {
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
 pub struct RawCameraData {
-    pos: [f32; 3],
     matrix: [[f32; 3]; 3],
+    pos: [f32; 3],
+    padding: [f32; 6],
 }
