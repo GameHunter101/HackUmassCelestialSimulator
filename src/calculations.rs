@@ -7,8 +7,8 @@ const GRAV: f32 = 6.67430;
 pub struct Planet {
     // Physical properties
     mass: f32,
-    pos: Vector3<f32>,
-    vel: Vector3<f32>,
+    pub pos: Vector3<f32>,
+    pub vel: Vector3<f32>,
 
     // Display properties
     //active: bool,
@@ -54,7 +54,7 @@ impl Planet {
     }
 
     // Calculate acceleration
-    fn calc_accel(&self, planet_list: &[Planet]) -> Vector3<f32> {
+    pub fn calc_accel(&self, planet_list: &[Planet]) -> Vector3<f32> {
         // Make sure planet_list doesn't contain self
         let mut accel: Vector3<f32> = Vector3::zeros();
         for p in planet_list {
@@ -67,6 +67,7 @@ impl Planet {
     // Do the actual moving
     pub fn step(&mut self, planet_list: &[Planet], dt: f32) {
         let pos_old = self.pos;
+        // println!("Pos: {pos_old}");
         let vel_old = self.vel;
 
         let accel_old = self.calc_accel(planet_list);
@@ -80,12 +81,13 @@ impl Planet {
     // For simplicity, planet_list only contains the star
     pub fn set_init_velocity(&mut self, planet_list: &[Planet]) {
         let accel = self.calc_accel(planet_list);
+        // println!("Accel: {accel}");
         // Attempt to get a Star
         let star = &planet_list[0];
 
         let dr = star.pos - self.pos;
         let mag = f32::sqrt(accel.magnitude() * dr.magnitude());
-        let uv = Vector3::z_axis().cross(&dr.normalize());
+        let uv = Vector3::y_axis().cross(&dr.normalize());
 
         self.vel = uv * mag;
     }

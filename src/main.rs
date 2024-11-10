@@ -12,18 +12,20 @@ use winit::{
     dpi::PhysicalPosition,
     event::{ElementState, Event, WindowEvent},
     event_loop::EventLoop,
-    platform::modifier_supplement::KeyEventExtModifierSupplement,
     window::WindowBuilder,
 };
 
 const PLANET_ARRAY_SIZE: usize = 128;
 
 // Helper functions
-fn other_planets(count: usize, index: usize, planets: &mut [Planet]) -> Vec<Planet> {
+fn splice_planets(
+    index: usize,
+    planets: &mut [Planet],
+) -> (&mut Planet, Vec<Planet>) {
     let (pre_planets, post_planets_and_current) = planets.split_at_mut(index);
     let (this_planet, post_planets) = post_planets_and_current.split_first_mut().unwrap();
     let chain = pre_planets.iter().chain(post_planets.iter());
-    chain.cloned().collect::<Vec<_>>()
+    (this_planet, chain.cloned().collect::<Vec<_>>())
 }
 
 fn planets_to_raw_data(planets: &[Planet]) -> [RawPlanetData; PLANET_ARRAY_SIZE] {
@@ -51,7 +53,7 @@ fn main() {
     };
 
     let mut camera = Camera::default();
-    camera.pos = Vector3::new(0.0, 0.0, -5.0);
+    camera.pos = Vector3::new(0.0, 0.0, -200.0);
     camera.roll = std::f32::consts::FRAC_PI_6;
 
     // Random number generator
@@ -76,9 +78,14 @@ fn main() {
     });
 
     // Set centripetal acceleration after initialized
-    /* for i in 0..planet_count {
-        planets[i].set_init_velocity(&other_planets(planet_count, i, &mut planets));
-    } */
+    for i in 1..planet_count {
+        let (this_planet, other_planets) = splice_planets(i, &mut planets[..planet_count]);
+        this_planet.set_init_velocity(&other_planets);
+    }
+
+    (0..planet_count).for_each(|i| {
+        println!("Initial vel: {}", planets[i].vel);
+    });
 
     let mut renderer = Renderer::new(&window, &planets_to_raw_data(&planets), &camera, scene_info);
 
@@ -125,6 +132,7 @@ fn main() {
             } => {
                 let current_frame_time = std::time::Instant::now();
                 let delta_time = current_frame_time - last_frame_time;
+                let delta_time = delta_time.as_micros() as f32 / 100000.0;
 
                 let raw_camera_data = camera.to_raw_data();
 
@@ -138,16 +146,16 @@ fn main() {
                     planets: planets_to_raw_data(&planets),
                 };
 
-                /* renderer.queue.write_buffer(
+                renderer.queue.write_buffer(
                     &renderer.planet_buffer,
                     0,
                     bytemuck::cast_slice(&[raw_planet_data]),
-                ); */
+                );
 
                 let info = SceneInfo {
                     mouse_pos: pmouse.into(),
                     resolution: current_resolution,
-                    delta_time: delta_time.as_micros() as f32,
+                    delta_time,
                     planet_count: planet_count as u32,
                 };
                 renderer.queue.write_buffer(
@@ -155,6 +163,14 @@ fn main() {
                     0,
                     bytemuck::cast_slice(&[info]),
                 );
+
+                for i in 0..planet_count {
+                    let (this_planet, other_planets) =
+                        splice_planets(i, &mut planets[..planet_count]);
+
+                    this_planet.step(&other_planets, delta_time);
+                }
+
                 renderer.render();
                 last_frame_time = current_frame_time;
             }
@@ -211,7 +227,7 @@ fn main() {
                     winit::keyboard::KeyCode::KeyA => Vector3::new(-1.0, 0.0, 0.0),
                     _ => Vector3::zeros(),
                 };
-                camera.pos += offset;
+                camera.pos += offset * 2.0;
             }
             _ => {}
         })

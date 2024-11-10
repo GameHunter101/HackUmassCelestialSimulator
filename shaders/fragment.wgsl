@@ -52,6 +52,12 @@ fn map(p : vec3f) -> vec4<f32> {
             current_min_color = planets.planets[i].color;
         }
     }
+    
+    let plane = sdPlane(p, vec3f(0.0, 1.0, 0.0), 50.0);
+    if (plane < current_min) {
+        current_min = plane;
+        current_min_color = vec3f(0.03);
+    }
 
     // return sphere;
     return vec4f(current_min_color, current_min);
@@ -59,6 +65,10 @@ fn map(p : vec3f) -> vec4<f32> {
 
 fn sdSphere(position : vec3f, s : f32) -> f32 {
     return length(position) - s;
+}
+
+fn sdPlane(position: vec3f, normal: vec3f, height: f32) -> f32 {
+    return dot(position, normal) + height;
 }
 
 fn rot2D(angle : f32) -> mat2x2<f32>{
@@ -129,7 +139,7 @@ fn main(vertex_output: VertexOutput) -> @location(0) vec4f {
 
     // Coloring and Lighting
     let lightColor = vec3f(1.0); // the color of our light, in this case white
-    let lightSource = vec3f(2.5, 2.5, -1.0);
+    let lightSource = vec3f(1.0, 132.0 / 255.0, 0.0);
     let diffuseStrength = max(0.0, dot(normalize(lightSource), outNormal));
     let diffuse = lightColor * diffuseStrength * hit_color;
 
