@@ -114,7 +114,7 @@ fn main() {
             Event::WindowEvent {
                 event:
                     WindowEvent::MouseInput {
-                        button: MouseButton::Right,
+                        // button: MouseButton::Right,
                         state,
                         ..
                     },

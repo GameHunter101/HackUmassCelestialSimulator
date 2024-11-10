@@ -33,12 +33,15 @@ impl Camera {
             0.0, -self.roll.sin(), self.roll.cos()
         ];
 
-        let rotation_matrix = yaw_matrix * pitch_matrix * roll_matrix;
+        let rotation_matrix = (yaw_matrix * pitch_matrix * roll_matrix).to_homogeneous();
+
+        println!("mat: {rotation_matrix}");
 
         RawCameraData {
-            pos: self.pos.into(),
+            pos: self.pos.to_homogeneous().into(),
             matrix: rotation_matrix.into(),
-            padding: [0.0; 6],
+            /* pos: self.pos.into(),
+            padding: [0.0; 4], */
         }
     }
 
@@ -51,15 +54,20 @@ impl Camera {
     // Set sensitivity from argument [pitch, yaw]
     // You NEED to run this at once
     pub fn set_sensitivity(&mut self, set: [f32;2]) {
-        self.pitch_sens = set[0];
-        self.yaw_sens = set[1];
+        self.pitch_sens = set[0] / 100.0;
+        self.yaw_sens = set[1] / 100.0;
     }
 }
 
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
 pub struct RawCameraData {
-    matrix: [[f32; 3]; 3],
-    pos: [f32; 3],
-    padding: [f32; 6],
+    pos: [f32;4],
+    matrix: [[f32; 4]; 4],
+    /* a: [f32;3],
+    b: [f32;3],
+    c: [f32;3], */
+    // padding: [f32;3]
+    /* pos: [f32; 3],
+    padding: [f32; 4], */
 }
