@@ -11,23 +11,22 @@ use crate::{
 #[derive(Debug)]
 pub struct Renderer<'a> {
     surface: wgpu::Surface<'a>,
-    device: wgpu::Device,
-    queue: wgpu::Queue,
+    pub device: wgpu::Device,
+    pub queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
     render_pipeline: wgpu::RenderPipeline,
     camera_bind_group: wgpu::BindGroup,
-    camera_buffer: wgpu::Buffer,
+    pub camera_buffer: wgpu::Buffer,
     planet_bind_group: wgpu::BindGroup,
-    planet_buffer: wgpu::Buffer,
+    pub planet_buffer: wgpu::Buffer,
     info_bind_group: wgpu::BindGroup,
-    info_buffer: wgpu::Buffer,
+    pub info_buffer: wgpu::Buffer,
     depth_texture: wgpu::Texture,
     depth_texture_view: wgpu::TextureView,
     depth_texture_sampler: wgpu::Sampler,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
-    window: &'a Window,
 }
 
 impl<'a> Renderer<'a> {
@@ -103,7 +102,7 @@ impl<'a> Renderer<'a> {
         let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Camera Buffer"),
             contents: bytemuck::cast_slice(&[camera.to_raw_data()]),
-            usage: wgpu::BufferUsages::UNIFORM,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
         let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -133,7 +132,7 @@ impl<'a> Renderer<'a> {
         let planet_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Planet Buffer"),
             contents: bytemuck::cast_slice(planets),
-            usage: wgpu::BufferUsages::UNIFORM,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
         let planet_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -163,7 +162,7 @@ impl<'a> Renderer<'a> {
         let info_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Info Buffer"),
             contents: bytemuck::cast_slice(&[info]),
-            usage: wgpu::BufferUsages::UNIFORM,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
         let info_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -247,8 +246,6 @@ impl<'a> Renderer<'a> {
             cache: None,
         });
 
-        println!("Size: {size:?}");
-
         let (depth_texture, depth_texture_view, depth_texture_sampler) =
             Self::create_depth_texture(&device, &config);
 
@@ -265,7 +262,6 @@ impl<'a> Renderer<'a> {
         });
 
         Self {
-            window,
             surface,
             device,
             queue,
@@ -284,10 +280,6 @@ impl<'a> Renderer<'a> {
             info_bind_group,
             info_buffer,
         }
-    }
-
-    pub fn window(&self) -> &Window {
-        self.window
     }
 
     pub fn create_depth_texture(
@@ -336,47 +328,49 @@ impl<'a> Renderer<'a> {
             });
 
         let output = self.surface.get_current_texture();
-        let output = output.unwrap();
-        let color_view = output
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
+        if let Ok(output) = output {
+            let color_view = output
+                .texture
+                .create_view(&wgpu::TextureViewDescriptor::default());
 
-        {
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &color_view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::RED),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &self.depth_texture_view,
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(1.0),
-                        store: wgpu::StoreOp::Store,
+            {
+                let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("Render Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &color_view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color::RED),
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                        view: &self.depth_texture_view,
+                        depth_ops: Some(wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(1.0),
+                            store: wgpu::StoreOp::Store,
+                        }),
+                        stencil_ops: None,
                     }),
-                    stencil_ops: None,
-                }),
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
+                });
 
-            render_pass.set_pipeline(&self.render_pipeline);
+                render_pass.set_pipeline(&self.render_pipeline);
 
-            render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
-            render_pass.set_bind_group(1, &self.planet_bind_group, &[]);
-            render_pass.set_bind_group(2, &self.info_bind_group, &[]);
+                render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
+                render_pass.set_bind_group(1, &self.planet_bind_group, &[]);
+                render_pass.set_bind_group(2, &self.info_bind_group, &[]);
 
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            render_pass.draw_indexed(0..(INDICES.len() as u32), 0, 0..1);
+                render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+                render_pass
+                    .set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                render_pass.draw_indexed(0..(INDICES.len() as u32), 0, 0..1);
+            }
+
+            self.queue.submit(Some(encoder.finish()));
+            output.present();
         }
-
-        self.queue.submit(Some(encoder.finish()));
-        output.present();
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {

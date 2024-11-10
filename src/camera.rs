@@ -35,13 +35,9 @@ impl Camera {
 
         let rotation_matrix = yaw_matrix * pitch_matrix * roll_matrix;
 
-        let translation = nalgebra::Translation3::from(self.pos);
-
-        let transformation = translation.to_homogeneous() * rotation_matrix.to_homogeneous();
-
         RawCameraData {
             pos: self.pos.into(),
-            matrix: transformation.into(),
+            matrix: rotation_matrix.into(),
         }
     }
 
@@ -63,5 +59,5 @@ impl Camera {
 #[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
 pub struct RawCameraData {
     pos: [f32; 3],
-    matrix: [[f32; 4]; 4],
+    matrix: [[f32; 3]; 3],
 }
