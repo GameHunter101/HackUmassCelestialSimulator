@@ -12,6 +12,7 @@ use winit::{
     dpi::PhysicalPosition,
     event::{ElementState, Event, WindowEvent},
     event_loop::EventLoop,
+    platform::modifier_supplement::KeyEventExtModifierSupplement,
     window::WindowBuilder,
 };
 
@@ -60,12 +61,7 @@ fn main() {
 
     (0..planet_count).for_each(|i| {
         planets[i] = match i {
-            0 => Planet::new(
-                10000.0,
-                [0.0, 0.0, 0.0],
-                35.0,
-                [1.0, 132.0 / 255.0, 0.0],
-            ),
+            0 => Planet::new(10000.0, [0.0, 0.0, 0.0], 35.0, [1.0, 132.0 / 255.0, 0.0]),
             _ => Planet::new(
                 rng.gen_range(5.0..15.0),
                 [rng.gen_range(100.0..500.0), 0.0, 0.0],
@@ -195,6 +191,27 @@ fn main() {
                     winit::event::MouseScrollDelta::PixelDelta(dist) => dist.y as f32,
                 };
                 camera.scroll(dist);
+            }
+            Event::WindowEvent {
+                event:
+                    WindowEvent::KeyboardInput {
+                        event:
+                            winit::event::KeyEvent {
+                                physical_key: winit::keyboard::PhysicalKey::Code(key),
+                                ..
+                            },
+                        ..
+                    },
+                ..
+            } => {
+                let offset = match key {
+                    winit::keyboard::KeyCode::KeyW => Vector3::new(0.0, 0.0, 1.0),
+                    winit::keyboard::KeyCode::KeyS => Vector3::new(0.0, 0.0, -1.0),
+                    winit::keyboard::KeyCode::KeyD => Vector3::new(1.0, 0.0, 0.0),
+                    winit::keyboard::KeyCode::KeyA => Vector3::new(-1.0, 0.0, 0.0),
+                    _ => Vector3::zeros(),
+                };
+                camera.pos += offset;
             }
             _ => {}
         })
