@@ -56,6 +56,15 @@ fn rot2D(angle : f32) -> mat2x2<f32>{
     return mat2x2<f32>(c, -s, s, c);
 }
 
+fn getNormal(position : vec3f) -> vec3f {
+    let d = vec2f(0.01, 0.0);
+    let gradientX = map(position + d.xyy) - map(position - d.xyy);
+    let gradientY = map(position + d.yxy) - map(position - d.yxy);
+    let gradientZ = map(position + d.yyx) - map(position - d.yyx);
+    let normal = vec3f(gradientX, gradientY, gradientZ);
+    return normalize(normal);
+}
+
 @fragment
 fn main(vertex_output: VertexOutput) -> @location(0) vec4f {
     let uv = vertex_output.tex_coords * vec2f(uniforms.iResolution.x / uniforms.iResolution.y, 1.0);
@@ -79,6 +88,7 @@ fn main(vertex_output: VertexOutput) -> @location(0) vec4f {
     var color = vec3(0.0);
 
     var totalDist = 0.;
+    var outNormal : vec3f;
 
     // var xzSwizzle : vec2;
     // rayOrigin.x *= rot2D(-m.x);
@@ -89,20 +99,32 @@ fn main(vertex_output: VertexOutput) -> @location(0) vec4f {
     // Ray marching
     for (var i = 0; i < 80; i++){
         var position : vec3f = rayOrigin + rayDirection * totalDist; // our postion along the ray
+        var normal : vec3f = getNormal(position);
 
         var distance = map(position);
 
         totalDist += distance;
 
-        color = vec3f(f32(i)) / 80.;
-
         if (distance < .001 || totalDist > 100.) {
+            outNormal = normal;
             break;
         };
     }
 
-    // Coloring
-    color = vec3(totalDist * .1);
+    // Coloring and Lighting
+    let lightColor = vec3f(1.0); // the color of our light, in this case white
+    let lightSource = vec3f(2.5, 2.5, -1.0);
+    let diffuseStrength = max(0.0, dot(normalize(lightSource), outNormal));
+    let diffuse = lightColor * diffuseStrength;
+
+    let viewSource = normalize(rayOrigin);
+    let reflectSource = normalize(reflect(-lightSource, outNormal));
+    var specularStrength = max(0.0, dot(viewSource, reflectSource));
+    specularStrength = pow(specularStrength, 64.0);
+    let specular = specularStrength * lightColor;
+
+    let lighting = diffuse * 0.75 + specular * 0.25;
+    color = lighting;
 
     return vec4(color, 1.0);
 }
