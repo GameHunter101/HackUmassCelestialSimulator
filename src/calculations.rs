@@ -54,7 +54,7 @@ impl Planet {
     }
 
     // Calculate acceleration
-    pub fn calc_accel(&self, planet_list: &[Planet]) -> Vector3<f32> {
+    pub fn calc_accel(&self, planet_list: &mut [&mut Planet]) -> Vector3<f32> {
         // Make sure planet_list doesn't contain self
         let mut accel: Vector3<f32> = Vector3::zeros();
         for p in planet_list {
@@ -64,8 +64,26 @@ impl Planet {
         accel * GRAV
     }
 
+    pub fn calc_collision(&mut self, planet_list: &mut [&mut Planet]) {
+        for planet in planet_list {
+            let direction_to_other_planet = planet.pos - self.pos;
+            let collision_distance = planet.radius + self.radius;
+            if direction_to_other_planet.magnitude() - collision_distance <= 0.0 {
+                let collision_point =
+                    self.pos + direction_to_other_planet.normalize() * self.radius;
+                let normal_vec = Vector3::new(2.0, 2.0, 2.0)
+                    .component_mul(&collision_point)
+                    .normalize();
+                let reflection_vector = self.vel - 2.0 * (self.vel.dot(&normal_vec)) * normal_vec;
+                let old_vel = self.vel;
+                self.vel = reflection_vector;
+                *planet.vel = *old_vel;
+            }
+        }
+    }
+
     // Do the actual moving
-    pub fn step(&mut self, planet_list: &[Planet], dt: f32) {
+    pub fn step(&mut self, planet_list: &mut [&mut Planet], dt: f32) {
         let pos_old = self.pos;
         // println!("Pos: {pos_old}");
         let vel_old = self.vel;
@@ -75,11 +93,12 @@ impl Planet {
         let accel_exp = self.calc_accel(planet_list);
         self.vel += (accel_old + accel_exp) * 0.5 * dt; // New vel
         self.pos = pos_old + (self.vel + vel_old) * 0.5 * dt; // New pos
+        self.calc_collision(planet_list);
     }
 
     // Attempt to set inital centripetal velocity for stable orbit
     // For simplicity, planet_list only contains the star
-    pub fn set_init_velocity(&mut self, planet_list: &[Planet]) {
+    pub fn set_init_velocity(&mut self, planet_list: &mut [&mut Planet]) {
         let accel = self.calc_accel(planet_list);
         // println!("Accel: {accel}");
         // Attempt to get a Star

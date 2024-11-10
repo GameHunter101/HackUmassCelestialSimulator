@@ -15,17 +15,17 @@ use winit::{
     window::WindowBuilder,
 };
 
-const PLANET_ARRAY_SIZE: usize = 128;
+const PLANET_ARRAY_SIZE: usize = 5;
 
 // Helper functions
 fn splice_planets(
     index: usize,
     planets: &mut [Planet],
-) -> (&mut Planet, Vec<Planet>) {
+) -> (&mut Planet, Vec<&mut Planet>) {
     let (pre_planets, post_planets_and_current) = planets.split_at_mut(index);
     let (this_planet, post_planets) = post_planets_and_current.split_first_mut().unwrap();
-    let chain = pre_planets.iter().chain(post_planets.iter());
-    (this_planet, chain.cloned().collect::<Vec<_>>())
+    let chain = pre_planets.iter_mut().chain(post_planets.iter_mut());
+    (this_planet, chain.collect::<Vec<_>>())
 }
 
 fn planets_to_raw_data(planets: &[Planet]) -> [RawPlanetData; PLANET_ARRAY_SIZE] {
@@ -79,8 +79,8 @@ fn main() {
 
     // Set centripetal acceleration after initialized
     for i in 1..planet_count {
-        let (this_planet, other_planets) = splice_planets(i, &mut planets[..planet_count]);
-        this_planet.set_init_velocity(&other_planets);
+        let (this_planet, mut other_planets) = splice_planets(i, &mut planets[..planet_count]);
+        this_planet.set_init_velocity(&mut other_planets);
     }
 
     (0..planet_count).for_each(|i| {
@@ -165,10 +165,10 @@ fn main() {
                 );
 
                 for i in 0..planet_count {
-                    let (this_planet, other_planets) =
+                    let (this_planet, mut other_planets) =
                         splice_planets(i, &mut planets[..planet_count]);
 
-                    this_planet.step(&other_planets, delta_time);
+                    this_planet.step(&mut other_planets, delta_time);
                 }
 
                 renderer.render();

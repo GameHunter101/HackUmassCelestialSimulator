@@ -16,7 +16,7 @@ struct Planet {
 }
 
 struct Planets {
-    planets: array<Planet, 128>,
+    planets: array<Planet, 5>,
     /* planet_count: u32,
     padding: f32, */
 }
