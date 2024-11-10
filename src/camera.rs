@@ -10,7 +10,7 @@ pub struct Camera {
 
     // Sensitivity settings
     pitch_sens: f32,
-    yaw_sens: f32,
+    roll_sens: f32,
 }
 
 impl Camera {
@@ -36,6 +36,7 @@ impl Camera {
         self.pitch -= (dpos[0] as f32) * self.pitch_sens;
         // self.pitch = std::f32::consts::PI;
         // self.yaw += (dpos[0] as f32) * self.yaw_sens;
+        self.roll += (dpos[1] as f32) * self.roll_sens;
         // println!("rot: {}", self.get_rotation_matrix());
     }
 
@@ -43,7 +44,7 @@ impl Camera {
     // You NEED to run this at once
     pub fn set_sensitivity(&mut self, set: [f32; 2]) {
         self.pitch_sens = set[0] / 100.0;
-        self.yaw_sens = set[1] / 100.0;
+        self.roll_sens = set[1] / 100.0;
     }
 
     pub fn scroll(&mut self, delta: f32) {

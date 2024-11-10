@@ -208,7 +208,7 @@ fn main() {
                 };
                 camera.scroll(dist);
             }
-            Event::WindowEvent {
+            /* Event::WindowEvent {
                 event:
                     WindowEvent::KeyboardInput {
                         event:
@@ -228,7 +228,7 @@ fn main() {
                     _ => Vector3::zeros(),
                 };
                 camera.pos += offset * 2.0;
-            }
+            } */
             _ => {}
         })
         .unwrap();

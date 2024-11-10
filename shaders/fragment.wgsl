@@ -51,7 +51,10 @@ fn map(p : vec3f) -> vec4<f32> {
         }
     }
     
-    let plane = sdPlane(p, vec3f(0.0, 1.0, 0.0), 50.0);
+    var plane = sdPlane(p, vec3f(0.0, 1.0, 0.0), 50.0);
+    if (camera.pos.y < 0.0) {
+        plane = sdPlane(p, vec3f(0.0, -1.0, 0.0), 50.0);
+    }
     if (plane < current_min) {
         current_min = plane;
         current_min_color = vec3f(0.03);
@@ -132,6 +135,10 @@ fn main(vertex_output: VertexOutput) -> @location(0) vec4f {
         };
         if (distance.w > 2000.0 || i+1 == 200) {
             // let val = mix(0.0,0.05, 1.0 - abs(uv.y)*3.0);
+            /* var val = 0.0;
+            if (uv.y <= 0.0) {
+                val = 0.03;
+            } */
             return vec4f(vec3f(0.0), 1.0);
         }
     }
