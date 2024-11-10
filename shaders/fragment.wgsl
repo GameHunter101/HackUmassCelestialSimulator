@@ -142,5 +142,16 @@ fn main(vertex_output: VertexOutput) -> @location(0) vec4f {
     let lighting = diffuse * 0.75 + specular * 0.25;
     color = lighting;
 
+    // Shadows
+    let p = rayOrigin + rayDirection * totalDist;
+    let lightDirection = normalize(lightSource);
+    let distanceToLightSource = length(lightSource - p);
+    rayOrigin = p * outNormal * 0.1;
+    rayDirection = lightDirection;
+    let shadowDistance = totalDist;
+    if (shadowDistance < distanceToLightSource) {
+        color = color * vec3f(0.25);
+    }
+
     return vec4(color, 1.0);
 }
