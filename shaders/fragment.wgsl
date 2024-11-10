@@ -36,7 +36,21 @@ var<uniform> planets: Planets;
 var<uniform> uniforms : Uniforms;
 
 fn map(p : vec3f) -> f32 {
-    return length(p - vec3f(0.5, 0.5, 0.5)) - 1.0;
+    // This is our interface for translating the sphere
+    var spherePosition = vec3f(2.,2.,0);
+    var sphere = sdSphere(p - spherePosition, 1.);
+
+    return sphere;
+}
+
+fn sdSphere(position : vec3f, s : f32) -> f32 {
+    return length(position) - s;
+}
+
+fn rot2D(angle : f32) -> mat2x2<f32>{
+    let s = sin(angle);
+    let c = cos(angle);
+    return mat2x2<f32>(c, -s, s, c);
 }
 
 @fragment
@@ -46,7 +60,7 @@ fn main(vertex_output: VertexOutput) -> @location(0) vec4f {
 
     // Initialization
     let rayOrigin = vec3f(0., 0., -3.);
-    let rayDirection = normalize(vec3(uv, 1.));
+    let rayDirection = normalize(vec3(uv * 2.5, 1.));
     var color = vec3(0.0);
 
     var totalDist = 0.;
