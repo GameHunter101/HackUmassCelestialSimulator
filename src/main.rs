@@ -8,6 +8,7 @@ use std::os::windows::thread;
 use calculations::{Planet, RawPlanetData};
 use camera::Camera;
 use rand::Rng;
+use nalgebra::Vector3;
 use renderer::Renderer;
 use winit::{
     dpi::PhysicalPosition,
@@ -49,6 +50,7 @@ fn main() {
     };
 
     let mut camera = Camera::default();
+    camera.pos = Vector3::new(0.0, 0.0, -4.0);
 
     // Random number generator
     let mut rng = rand::thread_rng();
@@ -153,7 +155,7 @@ fn main() {
             Event::WindowEvent {
                 event:
                     WindowEvent::MouseInput {
-                        button: MouseButton::Right,
+                        // button: MouseButton::Right,
                         state,
                         ..
                     },

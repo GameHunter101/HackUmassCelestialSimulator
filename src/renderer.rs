@@ -1,5 +1,4 @@
 use wgpu::{util::DeviceExt, Backends, Instance, InstanceDescriptor, RequestAdapterOptions};
-use winit::window::Window;
 
 use crate::{
     calculations::RawPlanetData,

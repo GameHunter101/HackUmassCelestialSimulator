@@ -8,19 +8,19 @@ pub struct Vertex {
 pub const VERTICES: [Vertex;4] = [
     Vertex {
         position: [-1.0,1.0, 0.0],
-        tex_coord: [0.0,1.0],
+        tex_coord: [-0.5,0.5],
     },
     Vertex {
         position: [-1.0,-1.0, 0.0],
-        tex_coord: [0.0,0.0],
+        tex_coord: [-0.5,-0.5],
     },
     Vertex {
         position: [1.0,-1.0, 0.0],
-        tex_coord: [1.0,0.0],
+        tex_coord: [0.5,-0.5],
     },
     Vertex {
         position: [1.0,1.0, 0.0],
-        tex_coord: [1.0,1.0],
+        tex_coord: [0.5,0.5],
     },
 ];
 
