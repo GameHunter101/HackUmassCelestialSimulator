@@ -11,6 +11,8 @@ struct Camera {
 struct Planet {
     pos: vec3<f32>,
     radius: f32,
+    color: vec3<f32>,
+    padding: f32,
 }
 
 struct Planets {
@@ -35,19 +37,24 @@ var<uniform> planets: Planets;
 @group(2) @binding(0)
 var<uniform> uniforms : Uniforms;
 
-fn map(p : vec3f) -> f32 {
+fn map(p : vec3f) -> vec4<f32> {
     // This is our interface for translating the sphere
 
-    var spherePosition = planets.planets[1].pos;
+    var spherePosition = planets.planets[0].pos;
 
-    var current_min = sdSphere(p - spherePosition, planets.planets[1].radius);
-    for (var i = 2; i < i32(uniforms.planet_count); i++) {
+    var current_min = sdSphere(p - spherePosition, planets.planets[0].radius);
+    var current_min_color = planets.planets[0].color;
+    for (var i = 1; i < i32(uniforms.planet_count); i++) {
         let sphere_position = planets.planets[i].pos;
-        current_min = min(sdSphere(p-sphere_position, planets.planets[i].radius), current_min);
+        let current_distance = sdSphere(p-sphere_position, planets.planets[i].radius);
+        if (current_distance < current_min) {
+            current_min = current_distance;
+            current_min_color = planets.planets[i].color;
+        }
     }
 
     // return sphere;
-    return current_min;
+    return vec4f(current_min_color, current_min);
 }
 
 fn sdSphere(position : vec3f, s : f32) -> f32 {
@@ -62,9 +69,9 @@ fn rot2D(angle : f32) -> mat2x2<f32>{
 
 fn getNormal(position : vec3f) -> vec3f {
     let d = vec2f(0.01, 0.0);
-    let gradientX = map(position + d.xyy) - map(position - d.xyy);
-    let gradientY = map(position + d.yxy) - map(position - d.yxy);
-    let gradientZ = map(position + d.yyx) - map(position - d.yyx);
+    let gradientX = map(position + d.xyy).w - map(position - d.xyy).w;
+    let gradientY = map(position + d.yxy).w - map(position - d.yxy).w;
+    let gradientZ = map(position + d.yyx).w - map(position - d.yyx).w;
     let normal = vec3f(gradientX, gradientY, gradientZ);
     return normalize(normal);
 }
@@ -73,7 +80,7 @@ fn getNormal(position : vec3f) -> vec3f {
 fn main(vertex_output: VertexOutput) -> @location(0) vec4f {
     let uv = vertex_output.tex_coords * vec2f(uniforms.iResolution.x / uniforms.iResolution.y, 1.0);
     let m = (uniforms.iMouse.xy * 2 - uniforms.iResolution.xy) / uniforms.iResolution.y;
-    let FOV = 60 * (3.14159265 / 180);
+    let FOV = 100 * (3.14159265 / 180);
     
     // return vec4f(uv, 0.0, 1.0);
 
@@ -101,19 +108,21 @@ fn main(vertex_output: VertexOutput) -> @location(0) vec4f {
     // rayDirection.z *= rot2D(-m.x);
 
     // Ray marching
-    for (var i = 0; i < 500; i++){
+    var hit_color = vec3f(0.0);
+    for (var i = 0; i < 200; i++){
         var position : vec3f = rayOrigin + rayDirection * totalDist; // our postion along the ray
         var normal : vec3f = getNormal(position);
 
         var distance = map(position);
 
-        totalDist += distance;
+        totalDist += distance.w;
 
-        if (distance < .001) {
+        if (distance.w < .001) {
             outNormal = normal;
+            hit_color = distance.xyz;
             break;
         };
-        if (distance > 5000.0) {
+        if (distance.w > 2000.0) {
             return vec4f(0.0, 0.0, 0.0, 1.0);
         }
     }
@@ -122,7 +131,7 @@ fn main(vertex_output: VertexOutput) -> @location(0) vec4f {
     let lightColor = vec3f(1.0); // the color of our light, in this case white
     let lightSource = vec3f(2.5, 2.5, -1.0);
     let diffuseStrength = max(0.0, dot(normalize(lightSource), outNormal));
-    let diffuse = lightColor * diffuseStrength;
+    let diffuse = lightColor * diffuseStrength * hit_color;
 
     let viewSource = normalize(rayOrigin);
     let reflectSource = normalize(reflect(-lightSource, outNormal));

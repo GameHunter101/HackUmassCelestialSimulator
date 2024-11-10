@@ -14,6 +14,7 @@ pub struct Planet {
     //active: bool,
     radius: f32,
     //rot_vel: f32, // Angular velocity in rad/s
+    color: [f32; 3],
 }
 
 impl Default for Planet {
@@ -22,7 +23,8 @@ impl Default for Planet {
             mass: Default::default(),
             pos: Default::default(),
             vel: Default::default(),
-            radius: Default::default()
+            radius: Default::default(),
+            color: [0.5; 3],
         }
     }
 }
@@ -33,10 +35,12 @@ pub struct RawPlanetData {
     pub pos: [f32; 3],
     // pub padding: f32,
     pub radius: f32,
+    pub color: [f32; 3],
+    pub padding: f32,
 }
 
 impl Planet {
-    pub fn new(mass: f32, pos: [f32; 3], radius: f32, ) -> Self {
+    pub fn new(mass: f32, pos: [f32; 3], radius: f32, color: [f32; 3]) -> Self {
         Planet {
             mass,
             pos: Vector3::from(pos),
@@ -44,6 +48,7 @@ impl Planet {
 
             //active: true,
             radius,
+            color,
             //rot_vel: f32, // Angular velocity in rad/s
         }
     }
@@ -90,6 +95,8 @@ impl Planet {
             pos: self.pos.into(),
             // padding: 0.0,
             radius: self.radius,
+            color: self.color,
+            padding: 0.0,
         }
     }
 }

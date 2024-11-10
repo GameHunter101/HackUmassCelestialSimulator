@@ -60,11 +60,21 @@ fn main() {
 
     (0..planet_count).for_each(|i| {
         planets[i] = match i {
-            0 => Planet::new(10000.0, [0.0, 0.0, 0.0], 50.0),
+            0 => Planet::new(
+                10000.0,
+                [0.0, 0.0, 0.0],
+                35.0,
+                [1.0, 132.0 / 255.0, 0.0],
+            ),
             _ => Planet::new(
                 rng.gen_range(5.0..15.0),
-                [rng.gen_range(10.0..50.0), 0.0, 0.0],
+                [rng.gen_range(100.0..500.0), 0.0, 0.0],
                 rng.gen_range(5.0..15.0),
+                [
+                    rng.gen_range(0.0..1.0),
+                    rng.gen_range(0.0..1.0),
+                    rng.gen_range(0.0..1.0),
+                ],
             ),
         }
     });
@@ -132,11 +142,11 @@ fn main() {
                     planets: planets_to_raw_data(&planets),
                 };
 
-                renderer.queue.write_buffer(
+                /* renderer.queue.write_buffer(
                     &renderer.planet_buffer,
                     0,
                     bytemuck::cast_slice(&[raw_planet_data]),
-                );
+                ); */
 
                 let info = SceneInfo {
                     mouse_pos: pmouse.into(),
