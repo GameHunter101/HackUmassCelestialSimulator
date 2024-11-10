@@ -20,8 +20,8 @@ struct Planets {
 }
 
 struct Uniforms {
-    iResolution: vec2<f32>,
     iMouse: vec2<f32>,
+    iResolution: vec2<f32>,
     iTime: f32,
     padding: f32,
 }
@@ -55,8 +55,9 @@ fn rot2D(angle : f32) -> mat2x2<f32>{
 
 @fragment
 fn main(vertex_output: VertexOutput) -> @location(0) vec4f {
-    // var uv = vec2f((vertex_output.clip_position * 2. - uniforms.iResolution.xy) / uniforms.iResolution.y);
-    let uv = vertex_output.tex_coords;
+    let uv = vertex_output.tex_coords * vec2f(uniforms.iResolution.x / uniforms.iResolution.y, 1.0);
+
+    // return vec4f(uv, 0.0, 1.0);
 
     // Initialization
     let rayOrigin = vec3f(0., 0., -3.);

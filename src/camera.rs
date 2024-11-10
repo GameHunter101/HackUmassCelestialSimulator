@@ -35,27 +35,23 @@ impl Camera {
 
         let rotation_matrix = yaw_matrix * pitch_matrix * roll_matrix;
 
-        let translation = nalgebra::Translation3::from(self.pos);
-
-        let transformation = translation.to_homogeneous() * rotation_matrix.to_homogeneous();
-
         RawCameraData {
             pos: self.pos.into(),
-            matrix: transformation.into(),
+            matrix: rotation_matrix.into(),
         }
     }
 
     // Update angles of rotation from dpos[x, y] of mouse
     pub fn rotate_from_mouse(&mut self, dpos: [f64;2]) {
-        self.pitch += dpos[1] as f32 * self.pitch_sens;
-        self.yaw += dpos[0] as f32 * self.yaw_sens;
+        self.pitch += (dpos[1] as f32) * self.pitch_sens;
+        self.yaw += (dpos[0] as f32) * self.yaw_sens;
     }
 
     // Set sensitivity from argument [pitch, yaw]
     // You NEED to run this at once
     pub fn set_sensitivity(&mut self, set: [f32;2]) {
-        self.pitch = set[0];
-        self.yaw = set[1];
+        self.pitch_sens = set[0];
+        self.yaw_sens = set[1];
     }
 }
 
@@ -63,5 +59,5 @@ impl Camera {
 #[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
 pub struct RawCameraData {
     pos: [f32; 3],
-    matrix: [[f32; 4]; 4],
+    matrix: [[f32; 3]; 3],
 }
