@@ -3,15 +3,36 @@ mod camera;
 mod mesh;
 mod renderer;
 
-use calculations::RawPlanetData;
+use std::os::windows::thread;
+
+use calculations::{Planet, RawPlanetData};
 use camera::Camera;
+use rand::Rng;
+use nalgebra::Vector3;
 use renderer::Renderer;
 use winit::{
     dpi::PhysicalPosition,
-    event::{ElementState, Event, MouseButton, WindowEvent},
+    event::{ElementState, Event, WindowEvent},
     event_loop::EventLoop,
     window::WindowBuilder,
 };
+
+const PLANET_ARRAY_SIZE: usize = 128;
+
+// Helper functions
+fn other_planets(count: usize, index: usize, planets: &mut [Planet]) -> Vec<Planet> {
+    let (pre_planets, post_planets_and_current) = planets.split_at_mut(index);
+    let (this_planet, post_planets) = post_planets_and_current.split_first_mut().unwrap();
+    let chain = pre_planets.iter().chain(post_planets.iter());
+    chain.cloned().collect::<Vec<_>>()
+}
+
+fn planets_to_raw_data(count: usize, planets: &[Planet]) -> Vec<RawPlanetData> {
+    planets[0..count]
+        .iter()
+        .map(|x| x.to_raw_data())
+        .collect::<Vec<_>>()
+}
 
 fn main() {
     let event_loop = EventLoop::new().unwrap();
@@ -29,15 +50,36 @@ fn main() {
     };
 
     let mut camera = Camera::default();
+    camera.pos = Vector3::new(0.0, 0.0, -5.0);
+    camera.roll = std::f32::consts::FRAC_PI_6;
 
-    let mut planets = [RawPlanetData {
-        mass: 10.0,
-        pos: [20.0, 20.0, 0.0],
-        padding: 0.0,
-        radius: 10.0,
-    }; 5];
+    // Random number generator
+    let mut rng = rand::thread_rng();
+    let mut planet_count = 5;
+    let mut planets: [Planet; PLANET_ARRAY_SIZE] = [Planet::default(); PLANET_ARRAY_SIZE];
 
-    let mut renderer = Renderer::new(&window, &planets, &camera, scene_info);
+    for i in 0..planet_count {
+        planets[i] = match i {
+            0 => Planet::new(10000.0, [0.0, 0.0, 0.0], 50.0),
+            _ => Planet::new(
+                rng.gen_range(5.0..15.0),
+                [rng.gen_range(10.0..50.0), 0.0, 0.0],
+                rng.gen_range(5.0..15.0),
+            ),
+        }
+    }
+
+    // Set centripetal acceleration after initialized
+    for i in 0..planet_count {
+        planets[i].set_init_velocity(&other_planets(planet_count, i, &mut planets));
+    }
+
+    let mut renderer = Renderer::new(
+        &window,
+        &planets_to_raw_data(planet_count, &planets),
+        &camera,
+        scene_info,
+    );
 
     event_loop.set_control_flow(winit::event_loop::ControlFlow::Poll);
 
@@ -94,7 +136,7 @@ fn main() {
                 renderer.queue.write_buffer(
                     &renderer.planet_buffer,
                     0,
-                    bytemuck::cast_slice(&[planets]),
+                    bytemuck::cast_slice(&planets_to_raw_data(planet_count, &mut planets)),
                 );
 
                 let info = SceneInfo {
@@ -134,6 +176,12 @@ fn main() {
                     camera.rotate_from_mouse(dp);
                 }
                 pmouse = position;
+            }
+            Event::WindowEvent {
+                event: WindowEvent::MouseWheel { delta: winit::event::MouseScrollDelta::LineDelta(x,y), .. },
+                ..
+            } => {
+                camera.scroll(y);
             }
             _ => {}
         })
