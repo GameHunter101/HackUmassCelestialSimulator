@@ -38,8 +38,6 @@ var<uniform> planets: Planets;
 var<uniform> uniforms : Uniforms;
 
 fn map(p : vec3f) -> vec4<f32> {
-    // This is our interface for translating the sphere
-
     var spherePosition = planets.planets[0].pos;
 
     var current_min = sdSphere(p - spherePosition, planets.planets[0].radius);
@@ -132,8 +130,9 @@ fn main(vertex_output: VertexOutput) -> @location(0) vec4f {
             hit_color = distance.xyz;
             break;
         };
-        if (distance.w > 2000.0) {
-            return vec4f(0.0, 0.0, 0.0, 1.0);
+        if (distance.w > 2000.0 || i+1 == 200) {
+            // let val = mix(0.0,0.05, 1.0 - abs(uv.y)*3.0);
+            return vec4f(vec3f(0.0), 1.0);
         }
     }
 

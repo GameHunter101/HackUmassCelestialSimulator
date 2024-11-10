@@ -83,9 +83,9 @@ fn main() {
         this_planet.set_init_velocity(&mut other_planets);
     }
 
-    (0..planet_count).for_each(|i| {
+    /* (0..planet_count).for_each(|i| {
         println!("Initial vel: {}", planets[i].vel);
-    });
+    }); */
 
     let mut renderer = Renderer::new(&window, &planets_to_raw_data(&planets), &camera, scene_info);
 

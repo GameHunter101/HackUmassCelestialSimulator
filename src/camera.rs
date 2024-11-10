@@ -1,4 +1,4 @@
-use nalgebra::{Matrix3, Vector3};
+use nalgebra::{Matrix4, Vector3};
 
 #[derive(Debug, Default)]
 pub struct Camera {
@@ -14,26 +14,8 @@ pub struct Camera {
 }
 
 impl Camera {
-    fn get_rotation_matrix(&self) -> Matrix3<f32> {
-        let yaw_matrix = nalgebra::matrix![
-            self.yaw.cos(), -self.yaw.sin(), 0.0;
-            self.yaw.sin(), self.yaw.cos(), 0.0;
-            0.0, 0.0, 1.0
-        ];
-
-        let pitch_matrix = nalgebra::matrix![
-            self.pitch.cos(), 0.0, self.pitch.sin();
-            0.0, 1.0, 0.0;
-            -self.pitch.sin(), 0.0, self.pitch.cos()
-        ];
-
-        let roll_matrix = nalgebra::matrix![
-            1.0, 0.0, 0.0;
-            0.0, self.roll.cos(), -self.roll.sin();
-            0.0, -self.roll.sin(), self.roll.cos()
-        ];
-
-        yaw_matrix * pitch_matrix * roll_matrix
+    fn get_rotation_matrix(&self) -> Matrix4<f32> {
+        Matrix4::from_euler_angles(self.roll, self.pitch, self.yaw)
     }
 
     pub fn to_raw_data(&self) -> RawCameraData {
@@ -42,8 +24,8 @@ impl Camera {
         // println!("Pos: {}", self.pos);
 
         RawCameraData {
-            pos: (rotation_matrix * self.pos).to_homogeneous().into(),
-            matrix: rotation_matrix.to_homogeneous().into(),
+            pos: (rotation_matrix * self.pos.to_homogeneous()).into(),
+            matrix: rotation_matrix.into(),
             /* pos: self.pos.into(),
             padding: [0.0; 4], */
         }
@@ -65,7 +47,14 @@ impl Camera {
     }
 
     pub fn scroll(&mut self, delta: f32) {
-        self.pos *= 1.0 + delta;
+        let delta = 1.0 + delta;
+        if delta > 1.0 && self.pos.magnitude_squared() < 4000000.0 {
+            self.pos *= delta;
+        }
+
+        if delta < 1.0 && self.pos.magnitude_squared() > 0.01 {
+            self.pos *= delta;
+        }
     }
 }
 
