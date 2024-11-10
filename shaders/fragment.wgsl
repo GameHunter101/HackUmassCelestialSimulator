@@ -37,6 +37,11 @@ var<uniform> planets: Planets;
 @group(2) @binding(0)
 var<uniform> uniforms : Uniforms;
 
+@group(3) @binding(0)
+var tex_diffuse: texture_2d<f32>;
+@group(3) @binding(1)
+var samp_diffuse: sampler;
+
 fn map(p : vec3f) -> vec4<f32> {
     var spherePosition = planets.planets[0].pos;
 
@@ -51,14 +56,14 @@ fn map(p : vec3f) -> vec4<f32> {
         }
     }
     
-    var plane = sdPlane(p, vec3f(0.0, 1.0, 0.0), 50.0);
+    /* var plane = sdPlane(p, vec3f(0.0, 1.0, 0.0), 50.0);
     if (camera.pos.y < 0.0) {
         plane = sdPlane(p, vec3f(0.0, -1.0, 0.0), 50.0);
     }
     if (plane < current_min) {
         current_min = plane;
-        current_min_color = vec3f(0.03);
-    }
+        current_min_color = vec3f(0.1) + textureSample(tex_diffuse, samp_diffuse, uv).xyz;
+    } */
 
     // return sphere;
     return vec4f(current_min_color, current_min);
@@ -139,7 +144,8 @@ fn main(vertex_output: VertexOutput) -> @location(0) vec4f {
             if (uv.y <= 0.0) {
                 val = 0.03;
             } */
-            return vec4f(vec3f(0.0), 1.0);
+            // return vec4f(vec3f(0.0), 1.0);
+            return textureSample(tex_diffuse, samp_diffuse, vertex_output.tex_coords + vec2f(0.5)) * vec4f(0.5);
         }
     }
 
