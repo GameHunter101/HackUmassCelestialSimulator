@@ -3,7 +3,7 @@ use nalgebra::Vector3;
 // Gravitational constant, can probably adjust
 const GRAV: f32 = 6.67430;
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Planet {
     // Physical properties
     mass: f32,
@@ -28,22 +28,22 @@ impl Default for Planet {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct RawPlanetData {
     pub pos: [f32; 3],
-    pub padding: f32,
+    // pub padding: f32,
     pub radius: f32,
 }
 
 impl Planet {
     pub fn new(mass: f32, pos: [f32; 3], radius: f32, ) -> Self {
         Planet {
-            mass: mass,
+            mass,
             pos: Vector3::from(pos),
             vel: Default::default(),
 
             //active: true,
-            radius: radius,
+            radius,
             //rot_vel: f32, // Angular velocity in rad/s
         }
     }
@@ -88,7 +88,7 @@ impl Planet {
     pub fn to_raw_data(&self) -> RawPlanetData {
         RawPlanetData {
             pos: self.pos.into(),
-            padding: 0.0,
+            // padding: 0.0,
             radius: self.radius,
         }
     }

@@ -9,21 +9,21 @@ struct Camera {
 }
 
 struct Planet {
-    mass: f32,
     pos: vec3<f32>,
-    padding: f32,
     radius: f32,
 }
 
 struct Planets {
-    planets: array<Planet,5>
+    planets: array<Planet, 128>,
+    /* planet_count: u32,
+    padding: f32, */
 }
 
 struct Uniforms {
     iMouse: vec2<f32>,
     iResolution: vec2<f32>,
     iTime: f32,
-    padding: f32,
+    planet_count: u32,
 }
 
 @group(0) @binding(0)
@@ -37,13 +37,17 @@ var<uniform> uniforms : Uniforms;
 
 fn map(p : vec3f) -> f32 {
     // This is our interface for translating the sphere
-    var spherePosition = vec3f(0.,0.,0.0);
-    var sphere = sdSphere(p - spherePosition, 1.);
 
-    let q = abs(p) - 0.5;
-    return length(max(q,vec3f(0.0))) + min(max(q.x,max(q.y,q.z)),0.0);
+    var spherePosition = planets.planets[1].pos;
+
+    var current_min = sdSphere(p - spherePosition, planets.planets[1].radius);
+    for (var i = 2; i < i32(uniforms.planet_count); i++) {
+        let sphere_position = planets.planets[i].pos;
+        current_min = min(sdSphere(p-sphere_position, planets.planets[i].radius), current_min);
+    }
 
     // return sphere;
+    return current_min;
 }
 
 fn sdSphere(position : vec3f, s : f32) -> f32 {
@@ -97,7 +101,7 @@ fn main(vertex_output: VertexOutput) -> @location(0) vec4f {
     // rayDirection.z *= rot2D(-m.x);
 
     // Ray marching
-    for (var i = 0; i < 80; i++){
+    for (var i = 0; i < 500; i++){
         var position : vec3f = rayOrigin + rayDirection * totalDist; // our postion along the ray
         var normal : vec3f = getNormal(position);
 
@@ -105,10 +109,13 @@ fn main(vertex_output: VertexOutput) -> @location(0) vec4f {
 
         totalDist += distance;
 
-        if (distance < .001 || totalDist > 100.) {
+        if (distance < .001) {
             outNormal = normal;
             break;
         };
+        if (distance > 5000.0) {
+            return vec4f(0.0, 0.0, 0.0, 1.0);
+        }
     }
 
     // Coloring and Lighting

@@ -3,12 +3,10 @@ mod camera;
 mod mesh;
 mod renderer;
 
-use std::os::windows::thread;
-
 use calculations::{Planet, RawPlanetData};
 use camera::Camera;
-use rand::Rng;
 use nalgebra::Vector3;
+use rand::Rng;
 use renderer::Renderer;
 use winit::{
     dpi::PhysicalPosition,
@@ -27,11 +25,13 @@ fn other_planets(count: usize, index: usize, planets: &mut [Planet]) -> Vec<Plan
     chain.cloned().collect::<Vec<_>>()
 }
 
-fn planets_to_raw_data(count: usize, planets: &[Planet]) -> Vec<RawPlanetData> {
-    planets[0..count]
+fn planets_to_raw_data(planets: &[Planet]) -> [RawPlanetData; PLANET_ARRAY_SIZE] {
+    planets
         .iter()
         .map(|x| x.to_raw_data())
         .collect::<Vec<_>>()
+        .try_into()
+        .unwrap()
 }
 
 fn main() {
@@ -46,7 +46,7 @@ fn main() {
         mouse_pos: [0.0; 2],
         resolution: [800.0; 2],
         delta_time: 1.0,
-        padding: 0.0,
+        planet_count: 1,
     };
 
     let mut camera = Camera::default();
@@ -55,10 +55,10 @@ fn main() {
 
     // Random number generator
     let mut rng = rand::thread_rng();
-    let mut planet_count = 5;
+    let planet_count = 5;
     let mut planets: [Planet; PLANET_ARRAY_SIZE] = [Planet::default(); PLANET_ARRAY_SIZE];
 
-    for i in 0..planet_count {
+    (0..planet_count).for_each(|i| {
         planets[i] = match i {
             0 => Planet::new(10000.0, [0.0, 0.0, 0.0], 50.0),
             _ => Planet::new(
@@ -67,19 +67,14 @@ fn main() {
                 rng.gen_range(5.0..15.0),
             ),
         }
-    }
+    });
 
     // Set centripetal acceleration after initialized
-    for i in 0..planet_count {
+    /* for i in 0..planet_count {
         planets[i].set_init_velocity(&other_planets(planet_count, i, &mut planets));
-    }
+    } */
 
-    let mut renderer = Renderer::new(
-        &window,
-        &planets_to_raw_data(planet_count, &planets),
-        &camera,
-        scene_info,
-    );
+    let mut renderer = Renderer::new(&window, &planets_to_raw_data(&planets), &camera, scene_info);
 
     event_loop.set_control_flow(winit::event_loop::ControlFlow::Poll);
 
@@ -133,17 +128,21 @@ fn main() {
                     bytemuck::cast_slice(&[raw_camera_data]),
                 );
 
+                let raw_planet_data = PlanetData {
+                    planets: planets_to_raw_data(&planets),
+                };
+
                 renderer.queue.write_buffer(
                     &renderer.planet_buffer,
                     0,
-                    bytemuck::cast_slice(&planets_to_raw_data(planet_count, &mut planets)),
+                    bytemuck::cast_slice(&[raw_planet_data]),
                 );
 
                 let info = SceneInfo {
                     mouse_pos: pmouse.into(),
                     resolution: current_resolution,
                     delta_time: delta_time.as_micros() as f32,
-                    padding: 0.0,
+                    planet_count: planet_count as u32,
                 };
                 renderer.queue.write_buffer(
                     &renderer.info_buffer,
@@ -178,10 +177,14 @@ fn main() {
                 pmouse = position;
             }
             Event::WindowEvent {
-                event: WindowEvent::MouseWheel { delta: winit::event::MouseScrollDelta::LineDelta(x,y), .. },
+                event: WindowEvent::MouseWheel { delta, .. },
                 ..
             } => {
-                camera.scroll(y);
+                let dist = match delta {
+                    winit::event::MouseScrollDelta::LineDelta(_, y) => y,
+                    winit::event::MouseScrollDelta::PixelDelta(dist) => dist.y as f32,
+                };
+                camera.scroll(dist);
             }
             _ => {}
         })
@@ -194,5 +197,11 @@ pub struct SceneInfo {
     mouse_pos: [f32; 2],
     resolution: [f32; 2],
     delta_time: f32,
-    padding: f32,
+    planet_count: u32,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
+pub struct PlanetData {
+    planets: [RawPlanetData; PLANET_ARRAY_SIZE],
 }
