@@ -25,6 +25,8 @@ fn main() {
         padding: 0.0,
     };
 
+    let mut camera = Camera::default();
+    camera.set_sensitivity([-1.0,1.0]);
     let mut renderer = Renderer::new(
         &window,
         &[RawPlanetData {
@@ -33,14 +35,15 @@ fn main() {
             padding: 0.0,
             radius: 10.0,
         }; 5],
-        &Camera::default(),
+        &camera,
         scene_info
     );
 
     event_loop.set_control_flow(winit::event_loop::ControlFlow::Poll);
 
     let mut mouseRPressed = false;
-    let mut pmouse= PhysicalPosition::new(0.0_f64,0.0);  // Previous mouse position
+    // Previous mouse position
+    let mut pmouse= PhysicalPosition::new(0.0_f64,0.0);
     event_loop
         .run(move |event, elwt| match event {
             Event::WindowEvent {
@@ -70,7 +73,7 @@ fn main() {
                 { position, .. }, ..} => {
                     if (mouseRPressed) {
                         let dp: [f64;2] = [position.x - pmouse.x, position.y - pmouse.y];
-                        // (camera).rotate_from_mouse(dp);
+                        camera.rotate_from_mouse(dp);
                     }
 
                     pmouse = position;

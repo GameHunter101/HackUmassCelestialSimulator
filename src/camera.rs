@@ -47,15 +47,15 @@ impl Camera {
 
     // Update angles of rotation from dpos[x, y] of mouse
     pub fn rotate_from_mouse(&mut self, dpos: [f64;2]) {
-        self.pitch += dpos[1] as f32 * self.pitch_sens;
-        self.yaw += dpos[0] as f32 * self.yaw_sens;
+        self.pitch += (dpos[1] as f32) * self.pitch_sens;
+        self.yaw += (dpos[0] as f32) * self.yaw_sens;
     }
 
     // Set sensitivity from argument [pitch, yaw]
     // You NEED to run this at once
     pub fn set_sensitivity(&mut self, set: [f32;2]) {
-        self.pitch = set[0];
-        self.yaw = set[1];
+        self.pitch_sens = set[0];
+        self.yaw_sens = set[1];
     }
 }
 
