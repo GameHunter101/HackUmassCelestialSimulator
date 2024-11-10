@@ -9,7 +9,7 @@ use nalgebra::Vector3;
 use renderer::Renderer;
 use winit::{
     dpi::PhysicalPosition,
-    event::{ElementState, Event, MouseButton, WindowEvent},
+    event::{ElementState, Event, WindowEvent},
     event_loop::EventLoop,
     window::WindowBuilder,
 };
@@ -30,7 +30,8 @@ fn main() {
     };
 
     let mut camera = Camera::default();
-    camera.pos = Vector3::new(0.0, 0.0, -4.0);
+    camera.pos = Vector3::new(0.0, 0.0, -5.0);
+    camera.roll = std::f32::consts::FRAC_PI_6;
 
     let mut planets = [RawPlanetData {
         mass: 10.0,
@@ -136,6 +137,12 @@ fn main() {
                     camera.rotate_from_mouse(dp);
                 }
                 pmouse = position;
+            }
+            Event::WindowEvent {
+                event: WindowEvent::MouseWheel { delta: winit::event::MouseScrollDelta::LineDelta(x,y), .. },
+                ..
+            } => {
+                camera.scroll(y);
             }
             _ => {}
         })

@@ -102,7 +102,7 @@ fn main(vertex_output: VertexOutput) -> @location(0) vec4f {
     }
 
     // Coloring
-    color = vec3(totalDist * .2);
+    color = vec3(totalDist * .1);
 
     return vec4(color, 1.0);
 }
