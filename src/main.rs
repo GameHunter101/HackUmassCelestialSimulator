@@ -58,6 +58,8 @@ fn main() {
 
     let mut current_resolution: [f32; 2] = window.inner_size().into();
 
+    camera.set_sensitivity([-1.0, 1.0]);
+
     event_loop
         .run(|event, elwt| match event {
             Event::WindowEvent {
@@ -131,7 +133,6 @@ fn main() {
                     let dp: [f64; 2] = [position.x - pmouse.x, position.y - pmouse.y];
                     camera.rotate_from_mouse(dp);
                 }
-
                 pmouse = position;
             }
             _ => {}

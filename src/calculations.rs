@@ -41,7 +41,7 @@ impl Planet {
     }
 
     // Do the actual moving
-    fn step(&mut self, planet_list: &[Planet], dt: f32) {
+    pub fn step(&mut self, planet_list: &[Planet], dt: f32) {
         let pos_old = self.pos;
         let vel_old = self.vel;
 
