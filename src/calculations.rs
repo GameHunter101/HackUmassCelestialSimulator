@@ -8,7 +8,10 @@ pub struct Planet {
     // Physical properties
     mass: f32,
     pub pos: Vector3<f32>,
+    // Velocity used for orbital calculations
     pub vel: Vector3<f32>,
+    // Vel used to apply 'forces', reset to vel after step
+    pub vel2: Vector3<f32>,
 
     // Display properties
     //active: bool,
@@ -23,6 +26,7 @@ impl Default for Planet {
             mass: Default::default(),
             pos: Default::default(),
             vel: Default::default(),
+            vel2: Default::default(),
             radius: Default::default(),
             color: [0.5; 3],
         }
@@ -45,6 +49,7 @@ impl Planet {
             mass,
             pos: Vector3::from(pos),
             vel: Default::default(),
+            vel2: Default::default(),
 
             //active: true,
             radius,
@@ -66,27 +71,22 @@ impl Planet {
 
     pub fn calc_collision(&mut self, planet_list: &mut [&mut Planet]) {
         for planet in planet_list {
-            let direction_to_other_planet = planet.pos - self.pos;
+            let delta_pos = self.pos - planet.pos;
             let collision_distance = planet.radius + self.radius;
-            if direction_to_other_planet.magnitude() - collision_distance <= 0.0 {
-                let collision_point =
-                    self.pos + direction_to_other_planet.normalize() * self.radius;
-                let normal_vec = Vector3::new(2.0, 2.0, 2.0)
-                    .component_mul(&collision_point)
-                    .normalize();
-                let reflection_vector = self.vel - 2.0 * (self.vel.dot(&normal_vec)) * normal_vec;
-                let old_vel = self.vel;
-                self.vel = reflection_vector;
-                // *planet.vel = *old_vel;
-                let new_other_vel = planet.vel + self.mass / planet.mass * (old_vel - reflection_vector);
-                *planet.vel = *new_other_vel;
+            if delta_pos.magnitude() - collision_distance <= 0.0 {
 
+                self.vel2 -= (2.0 * planet.mass) / (self.mass+planet.mass)
+                    * (self.vel - planet.vel).dot(&delta_pos)
+                    / delta_pos.norm_squared() * delta_pos;
             }
         }
     }
 
     // Do the actual moving
     pub fn step(&mut self, planet_list: &mut [&mut Planet], dt: f32) {
+        // Apply external 'forces'
+        self.vel = self.vel2;
+
         let pos_old = self.pos;
         // println!("Pos: {pos_old}");
         let vel_old = self.vel;
@@ -96,7 +96,9 @@ impl Planet {
         let accel_exp = self.calc_accel(planet_list);
         self.vel += (accel_old + accel_exp) * 0.5 * dt; // New vel
         self.pos = pos_old + (self.vel + vel_old) * 0.5 * dt; // New pos
-        self.calc_collision(planet_list);
+
+        // Update vel2 to match
+        self.vel2 = self.vel;
     }
 
     // Attempt to set inital centripetal velocity for stable orbit
@@ -111,7 +113,7 @@ impl Planet {
         let mag = f32::sqrt(accel.magnitude() * dr.magnitude());
         let uv = Vector3::y_axis().cross(&dr.normalize());
 
-        self.vel = uv * mag;
+        self.vel2 = uv * mag;
     }
 
     pub fn to_raw_data(&self) -> RawPlanetData {

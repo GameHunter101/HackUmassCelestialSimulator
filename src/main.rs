@@ -164,6 +164,15 @@ fn main() {
                     bytemuck::cast_slice(&[info]),
                 );
 
+                // Calculate any collisions
+                for i in 0..planet_count {
+                    let (this_planet, mut other_planets) =
+                        splice_planets(i, &mut planets[..planet_count]);
+
+                    this_planet.calc_collision(&mut other_planets);
+                }
+
+                // Frame update for physics
                 for i in 0..planet_count {
                     let (this_planet, mut other_planets) =
                         splice_planets(i, &mut planets[..planet_count]);
